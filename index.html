@@ -56,6 +56,8 @@ main { padding: 25px; }
 }
 .poster {
   height: 180px;
+  width: 100%;
+  object-fit: cover;
   background: linear-gradient(135deg,#5d183a,#17172b);
   display: grid;
   place-items: center;
@@ -63,40 +65,170 @@ main { padding: 25px; }
 }
 .film h3 { padding: 0 12px; }
 .film p { padding: 0 12px; color: #bbb; }
+.film a {
+  display: inline-block;
+  margin: 0 12px;
+  color: white;
+  background: #e50935;
+  padding: 9px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+#status { color: #bbb; padding: 10px 0; }
 footer { text-align: center; padding: 30px; color: #aaa; }
 </style>
 </head>
 <body>
 <header>
   <div class="logo">FLIXORA</div>
-  <input id="search" placeholder="Traži film ili seriju..." oninput="searchFilms()">
+  <input id="search" placeholder="Traži film ili seriju...">
 </header>
 
 <section class="hero">
   <h1>Dobrodošli na FLIXORA</h1>
   <p>Tvoj svijet filmova i serija na jednom mjestu.</p>
-  <button onclick="document.getElementById('katalog').scrollIntoView()">Pogledaj katalog</button>
+  <button onclick="document.getElementById('katalog').scrollIntoView()">
+    Pogledaj katalog
+  </button>
 </section>
 
 <main id="katalog">
-  <h2>🎬 Popularni filmovi</h2>
-  <div class="films" id="films">
-    <div class="film"><div class="poster">🎥</div><h3>Film 1</h3><p>Filmovi</p></div>
-    <div class="film"><div class="poster">🍿</div><h3>Film 2</h3><p>Akcija</p></div>
-    <div class="film"><div class="poster">⭐</div><h3>Film 3</h3><p>Drama</p></div>
-    <div class="film"><div class="poster">🎞️</div><h3>Serija 1</h3><p>Serije</p></div>
-  </div>
+  <h2>🎬 Filmovi i serije</h2>
+  <p id="status">Učitavam katalog...</p>
+  <div class="films" id="films"></div>
 </main>
 
 <footer>© 2026 FLIXORA | Filmovi i serije</footer>
 
 <script>
-function searchFilms() {
-  const query = document.getElementById('search').value.toLowerCase();
-  document.querySelectorAll('.film').forEach(film => {
-    film.style.display = film.innerText.toLowerCase().includes(query) ? '' : 'none';
+const sheetURL =
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vRktgclWbJDfchwToyp3xCt_hYbCYjWROM1oUlJVyR0cFP3XKLSqHfsjYv472QF_kokfIX-wzXccW2m/pub?gid=0&single=true&output=csv";
+
+let allFilms = [];
+
+function parseCSV(text) {
+  const rows = [];
+  let row = [], value = "", quoted = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+
+    if (c === '"' && quoted && text[i + 1] === '"') {
+      value += '"';
+      i++;
+    } else if (c === '"') {
+      quoted = !quoted;
+    } else if (c === ',' && !quoted) {
+      row.push(value);
+      value = "";
+    } else if ((c === '\n' || c === '\r') && !quoted) {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(value);
+      if (row.some(cell => cell.trim() !== "")) rows.push(row);
+      row = [];
+      value = "";
+    } else {
+      value += c;
+    }
+  }
+
+  row.push(value);
+  if (row.some(cell => cell.trim() !== "")) rows.push(row);
+  return rows;
+}
+
+function safeLink(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function renderFilms(films) {
+  const container = document.getElementById("films");
+  container.innerHTML = "";
+
+  films.forEach(film => {
+    const card = document.createElement("div");
+    card.className = "film";
+
+    const posterURL = safeLink(film.poster);
+    if (posterURL) {
+      const img = document.createElement("img");
+      img.className = "poster";
+      img.src = posterURL;
+      img.alt = film.name;
+      card.appendChild(img);
+    } else {
+      const poster = document.createElement("div");
+      poster.className = "poster";
+      poster.textContent = "🎬";
+      card.appendChild(poster);
+    }
+
+    const title = document.createElement("h3");
+    title.textContent = film.name;
+    card.appendChild(title);
+
+    const info = document.createElement("p");
+    info.textContent = [film.type, film.genre, film.description]
+      .filter(Boolean).join(" • ");
+    card.appendChild(info);
+
+    const watchURL = safeLink(film.link);
+    if (watchURL) {
+      const link = document.createElement("a");
+      link.href = watchURL;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "Pogledaj";
+      card.appendChild(link);
+    }
+
+    container.appendChild(card);
   });
 }
+
+async function loadFilms() {
+  const status = document.getElementById("status");
+
+  try {
+    const response = await fetch(sheetURL);
+    if (!response.ok) throw new Error("Greška pri učitavanju");
+
+    const text = await response.text();
+    const rows = parseCSV(text);
+
+    allFilms = rows.slice(1).map(row => ({
+      name: row[0] || "",
+      type: row[1] || "",
+      poster: row[2] || "",
+      link: row[3] || "",
+      description: row[4] || "",
+      genre: row[5] || ""
+    })).filter(film => film.name.trim());
+
+    renderFilms(allFilms);
+    status.textContent = allFilms.length
+      ? "Katalog je učitan!"
+      : "Još nema filmova u tabeli.";
+  } catch (error) {
+    status.textContent =
+      "Nismo uspjeli učitati katalog. Provjeri objavljenu tabelu.";
+  }
+}
+
+document.getElementById("search").addEventListener("input", event => {
+  const query = event.target.value.toLowerCase();
+  renderFilms(allFilms.filter(film =>
+    Object.values(film).join(" ").toLowerCase().includes(query)
+  ));
+});
+
+loadFilms();
 </script>
 </body>
 </html>
