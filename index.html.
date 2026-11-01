@@ -1,0 +1,102 @@
+
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLIXORA</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #101018;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+header {
+  background: #191923;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+.logo { color: #e50935; font-size: 28px; font-weight: bold; }
+input {
+  padding: 12px;
+  border-radius: 8px;
+  border: 0;
+  max-width: 100%;
+}
+.hero {
+  padding: 65px 25px;
+  background: linear-gradient(90deg,#260b1b,#151522);
+}
+.hero h1 { font-size: 38px; margin-bottom: 10px; }
+button {
+  background: #e50935;
+  color: white;
+  border: 0;
+  padding: 12px 20px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+main { padding: 25px; }
+.films {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(140px,1fr));
+  gap: 15px;
+}
+.film {
+  background: #222230;
+  border-radius: 10px;
+  overflow: hidden;
+  padding-bottom: 15px;
+}
+.poster {
+  height: 180px;
+  background: linear-gradient(135deg,#5d183a,#17172b);
+  display: grid;
+  place-items: center;
+  font-size: 40px;
+}
+.film h3 { padding: 0 12px; }
+.film p { padding: 0 12px; color: #bbb; }
+footer { text-align: center; padding: 30px; color: #aaa; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">FLIXORA</div>
+  <input id="search" placeholder="Traži film ili seriju..." oninput="searchFilms()">
+</header>
+
+<section class="hero">
+  <h1>Dobrodošli na FLIXORA</h1>
+  <p>Tvoj svijet filmova i serija na jednom mjestu.</p>
+  <button onclick="document.getElementById('katalog').scrollIntoView()">Pogledaj katalog</button>
+</section>
+
+<main id="katalog">
+  <h2>🎬 Popularni filmovi</h2>
+  <div class="films" id="films">
+    <div class="film"><div class="poster">🎥</div><h3>Film 1</h3><p>Filmovi</p></div>
+    <div class="film"><div class="poster">🍿</div><h3>Film 2</h3><p>Akcija</p></div>
+    <div class="film"><div class="poster">⭐</div><h3>Film 3</h3><p>Drama</p></div>
+    <div class="film"><div class="poster">🎞️</div><h3>Serija 1</h3><p>Serije</p></div>
+  </div>
+</main>
+
+<footer>© 2026 FLIXORA | Filmovi i serije</footer>
+
+<script>
+function searchFilms() {
+  const query = document.getElementById('search').value.toLowerCase();
+  document.querySelectorAll('.film').forEach(film => {
+    film.style.display = film.innerText.toLowerCase().includes(query) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>
